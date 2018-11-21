@@ -5,4 +5,6 @@ var config = {
    "text": "loading..."
  },
  "mapSpeed": 120,
+ "screenWidth": 640,
+ "screenHeight": 480,
 }
