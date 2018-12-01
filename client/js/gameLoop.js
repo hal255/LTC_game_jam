@@ -6,10 +6,11 @@ gameLoop = {
 
     init: (data) => {
         data = typeof data === "undefined" ? {} : data;
-        gameLoop.player  = data.player   || config.default.player;
-        gameLoop.score   = data.score    || config.default.score;
-        gameLoop.width   = data.width    || config.init.screenWidth;
-        gameLoop.height  = data.height   || config.init.screenHeight;
+        gameLoop.player     = data.player       || config.default.player;
+        gameLoop.score      = data.score        || config.default.score;
+        gameLoop.particles   = data.particles     || config.default.particles;
+        gameLoop.width      = data.width        || config.init.screenWidth;
+        gameLoop.height     = data.height       || config.init.screenHeight;
         gameLoop.xStartRegion = data.xStartRegion || config.gameLoop.xStartRegion;
         gameLoop.yStartRegion = data.yStartRegion || config.gameLoop.yStartRegion;
         gameLoop.difficulty   = data.difficulty   || config.default.settings.difficulty;
@@ -24,12 +25,15 @@ gameLoop = {
 
         mapController.init();
         neutralMap.init();
+        objectSpawner.init();
     },
 
     create: () => {
         game.physics.startSystem(Phaser.Physics.ARCADE);
         neutralMap.create();    // setup neutral map sprites
+        objectSpawner.create();
         blockUtilities.init();
+
         //setup player object
         let playerStartData = [
             gameLoop.width  * gameLoop.xStartRegion,
@@ -38,13 +42,17 @@ gameLoop = {
         ];
         gameLoop.player.sprite = game.add.sprite(...playerStartData);
         playerUtilities.create(gameLoop.player);
+        darknessUtilities.create(gameLoop.player);
+        particlesUtilities.create(gameLoop.particles, gameLoop.player);
 
+        //interface pickups with player using event style callback
+        objectSpawner.onSpawn = playerUtilities.collisionInit;
 
         //setup score UI
         scoreUtilities.create(gameLoop.score);
 
         if (gameLoop.debugMode === true) {
-            gameLoop.debug.controls  = game.input.keyboard;
+            gameLoop.debug.controls = game.input.keyboard;
         };
 
         //gameLoop.difficultyIncrease = gameLoop.manageDifficulty();    // idk what this does lol
@@ -52,7 +60,9 @@ gameLoop = {
 
     update: () => {
         mapController.update();
+        objectSpawner.update();
         playerUtilities.update(gameLoop.player, gameLoop.player.controlType);
+        particlesUtilities.update(gameLoop.particles, gameLoop.player);
 
         // update score
         scoreUtilities.setText(gameLoop.score, gameLoop.score.amount + gameLoop.score.bonus);
@@ -68,7 +78,10 @@ gameLoop = {
         }
 
     },
-
+    render:() => {
+        game.debug.body(gameLoop.player.sprite);
+        //game.debug.body(sprite2);
+    },
     //This will eventually be an isolated module
     manageDifficulty: () => {
         let data = config.default.difficultyModifiers[gameLoop.difficulty];
